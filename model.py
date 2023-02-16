@@ -13,19 +13,19 @@ from keras.callbacks import TensorBoard
 import keras.applications
 import keras.optimizers
 import keras.regularizers
-from dataset_loader import kuzushiji49_loader
+import dataset_loader
 from plot_figure import plot_figure
 from image_writer import image_writer
 from balanced_accuracy import balanced_accuracy
 from preview import preview
 
-CONVNET = "keras.applications.ResNet152V2"
-EPOCHS = 1
-BATCH_SIZE = 1024
+CONVNET = "keras.applications.ResNet50V2"
+EPOCHS = 160
+BATCH_SIZE = 256
 OPTIMIZER = "Adam"
-MIX = False
-(train_ds, val_ds, test_ds), class_amount = kuzushiji49_loader(BATCH_SIZE, MIX)
-# preview(train_ds)
+MIX = True
+(train_ds, val_ds, test_ds), class_amount = dataset_loader.kkanji_loader(BATCH_SIZE, MIX)
+preview(train_ds)
 conv_base = eval(CONVNET)(
   weights=None,
   include_top=False,
@@ -37,11 +37,10 @@ model.add(tf.keras.layers.Resizing(
     32,
     interpolation='bilinear',
     crop_to_aspect_ratio=False))
-#model.add(layers.Dropout(0.2))
 model.add(conv_base)
 model.add(layers.GlobalAveragePooling2D())
-model.add(layers.Dropout(0.2))
-model.add(layers.Dense(class_amount * 2, activation='relu'))
+model.add(layers.Dense(4096, activation='relu'))
+model.add(layers.Dropout(0.5))
     #activity_regularizer=keras.regularizers.l2(l2=0.00001)))
 # model.add(layers.Dropout(0.2))
 model.add(layers.Dense(class_amount, activation='softmax'))
@@ -65,6 +64,8 @@ model.compile(optimizer=OPTIMIZER,
 history = model.fit(train_ds,
     epochs=EPOCHS, callbacks=[csv_logger], batch_size=BATCH_SIZE,
     validation_data=val_ds)
+model.summary()
+
 """
 predict = model.predict(test_ds)
 y_test = np.load('kmnist-test-labels.npz')['arr_0']
@@ -81,9 +82,14 @@ for data in range(10000):
 accs = np.mean(accs) # Final balanced accuracy
 print(accs)
 """
-# test_loss, test_acc = model.evaluate(test_ds)
+test_loss, test_acc = model.evaluate(test_ds)
 
-TITLE = CONVNET + " kkanji no Mixup " # + str(lr)
+mix_str = "no Mixup"
+
+if MIX:
+    mix_str = "Mixup"
+
+TITLE = CONVNET + " kuzushiji-49, 0.5 dropout " + mix_str # + str(lr)
 
 image_writer("logs/train_data/accuracy", plot_figure("accuracy",
     history.history["accuracy"], history.history['val_accuracy'], EPOCHS, TITLE))

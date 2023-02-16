@@ -51,8 +51,8 @@ def __data_reshape(x_train, y_train, x_test, y_test, shape, batch_size, mix, cla
     if mix:
         train_ds_one = (
         tf.data.Dataset.from_tensor_slices((new_x_train, new_y_train))
-        .shuffle(batch_size * 100)
-        .batch(batch_size)
+            .shuffle(batch_size * 100)
+            .batch(batch_size)
         )
         train_ds_two = (
             tf.data.Dataset.from_tensor_slices((new_x_train, new_y_train))
